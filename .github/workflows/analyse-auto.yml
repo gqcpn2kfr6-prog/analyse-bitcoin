@@ -5,21 +5,33 @@ on:
     - cron: "0 * * * *"   # Toutes les heures
   workflow_dispatch:
 
+permissions:
+  contents: write  # Permission pour écrire dans le repository
+
 jobs:
   run-analysis:
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          
       - uses: actions/setup-python@v5
         with:
           python-version: "3.10"
-      - run: pip install -r requirements.txt
-      - run: python analyse.py
-      - name: Commit des résultats
-        run: |
-          git config --global user.name "auto-analyse"
-          git config --global user.email "bot@example.com"
-          git add data/*
-          git commit -m "Mise à jour automatique des données Bitcoin" || exit 0
-          git push
+          
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+        
+      - name: Run Bitcoin analysis
+        run: python analyse.py
+        
+      - name: Commit and push results
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "📊 Mise à jour automatique des données Bitcoin - $(date '+%Y-%m-%d %H:%M:%S')"
+          file_pattern: "data/*"
+          commit_user_name: "bitcoin-bot"
+          commit_user_email: "bitcoin-bot@github-actions.com"
+          commit_author: "Bitcoin Analysis Bot <bitcoin-bot@github-actions.com>"
